@@ -3,23 +3,26 @@ using System.Collections.Generic;
 
 namespace Framework.Pathfinder
 {
+    /// <summary>
+    ///  n - neighbour, t - target 
+    ///>> Aligned (Only vertical and horizontal movement)
+    ///       n
+    ///     n t n
+    ///       n
+    ///>> Diagonal (Only diagonal movement)
+    ///     n   n
+    ///       t
+    ///     n   n 
+    ///>> Free (Movement in any direction)
+    ///     n n n
+    ///     n t n
+    ///     n n n
+    /// </summary>
     enum PathMode
     {
         Aligned, Diagonal, Free
     }
-    // n - neighbour, t - target
-    // >> Aligned (Only vertical and horizontal movement)
-    //        n
-    //      n t n
-    //        n
-    // >> Diagonal (Only diagonal movement)
-    //      n   n
-    //        t
-    //      n   n 
-    // >> Free (Movement in any direction)
-    //      n n n
-    //      n t n
-    //      n n n
+    
     class Pathfinder
     {
         public PathMode Mode { get; set; } = PathMode.Free;
@@ -28,15 +31,15 @@ namespace Framework.Pathfinder
         private Vector2i mapSize;
         private Vector2i startPos, finishPos;
 
-///<summary> Creates node grid for passed map
-        // 0 - empty space
-        // 1 - obstacle
+        ///<summary> Creates node grid that is used to calculate paths for passed map </summary>
+        ///<param name="map"> 2d array map where 0 - empty "walkable" space, any other positive number - obstacle</param>
         public void Init(in uint[,] map)
         {
             mapSize.X = map.GetLength(1);
             mapSize.Y = map.GetLength(0);
             GenNodes(map);
         }
+
         ///<summary>Calculates path. Use after Init() call.</summary>
         ///<returns>true - if path was found, false otherwise</returns>
         ///<param name="path">Path list to be filled with solving positions</param>
@@ -48,8 +51,6 @@ namespace Framework.Pathfinder
             startPos = startNodePos; finishPos = finishNodePos;
             ClearNodesCache();
 
-            path = new List<Vector2i>();
-
             Node currentNode = GetNodeAt(startPos);
 
             while (true)
@@ -60,14 +61,14 @@ namespace Framework.Pathfinder
                 OpenNeighbourNodes(currentNode);
 
                 // If there are no available opened nodes - all nodes are discovered, target node not found, there is no posible path
-                if (openedNodes.Count == 0) return false;
+                if (openedNodes.Count == 0) { path = null; return false; }
 
                 currentNode = GetLowestCostNode_f();
 
                 // If finish node reached -> collect solving node's positions and break;
                 if (currentNode.pos == finishPos)
                 {
-                    FillPath(path, currentNode);
+                    FillPath(out path, currentNode);
                     break;
                 }
             }
@@ -75,8 +76,14 @@ namespace Framework.Pathfinder
             return true;
         }
 
-        private void FillPath(List<Vector2i> pathList, Node currentNode)
+        /// <summary>
+        /// Traces back all the final node heritage adding their positions to the list and filling up "pathList" parameter with them. 
+        /// </summary>
+        /// <param name="pathList"> List to be filled with path solving positions </param>
+        /// <param name="currentNode"> Finish node that has been discovered through path finding </param>
+        private void FillPath(out List<Vector2i> pathList, Node currentNode)
         {
+            pathList = new List<Vector2i>();
             pathList.Add(currentNode.pos);
             while (currentNode.parent != null)
             {
@@ -84,6 +91,12 @@ namespace Framework.Pathfinder
                 pathList.Insert(0, currentNode.pos);
             }
         }
+
+        /// <summary>
+        /// Searches open node with the lowest f-cost which is summ of g(distance to the start through parents) and h-cost(distance to the finish) 
+        /// if there are multiple - returns the one with lowest h-cost.
+        /// </summary>
+        /// <returns> Node with lowest f cost, if there are multiple - the one with lowest h-cost </returns>
         private Node GetLowestCostNode_f()
         {
             Node returnNode = null;
@@ -105,6 +118,10 @@ namespace Framework.Pathfinder
             }
                 return returnNode;
         }
+        /// <summary>
+        /// Discovers nodes around passed node. Calculates all costs and puts nodes in opened state. 
+        /// </summary>
+        /// <param name="currentNode"> Node to discover nodes around </param>
         private void OpenNeighbourNodes(Node currentNode)
         {
             List<Node> neighbors = GetNeighbors(currentNode);
@@ -128,6 +145,11 @@ namespace Framework.Pathfinder
                     }
                 }
         }
+
+        /// <summary>
+        /// Creates nodes list according to the map to use for path calculation. Needs to be done only once for the map. 
+        /// </summary>
+        /// <param name="map"> Array to gen nodes of. In array: 0 - empty "walkable" space, any other value - obstacle </param>
         private void GenNodes(in uint[,] map)
         {
             nodes = new List<Node>();
@@ -145,6 +167,11 @@ namespace Framework.Pathfinder
             }
         }
 
+        /// <summary>
+        /// Returns list of node neighbours according to the pathfinding mode. See "PathMode" enum comment for modes description. 
+        /// </summary>
+        /// <param name="targetNode"> Node to look for neighbour nodes around </param>
+        /// <returns> List of found neighbour nodes, empty list if no found </returns>
         private List<Node> GetNeighbors(Node targetNode)
         {
             List<Node> neighbors = new List<Node>();
@@ -180,6 +207,11 @@ namespace Framework.Pathfinder
             return neighbors;
         }
 
+        /// <summary>
+        /// Gets node with exact coordinates. 
+        /// </summary>
+        /// <param name="pos"> Position of needed node </param>
+        /// <returns> Node with passed position, null if none found. </returns>
         public Node GetNodeAt(Vector2i pos)
         {
             foreach (var node in nodes)
@@ -190,6 +222,9 @@ namespace Framework.Pathfinder
             return null;
         }
         
+        /// <summary>
+        /// Clears node's variables and resets state to NodeState.Idle 
+        /// </summary>
         private void ClearNodesCache()
         {
             openedNodes.Clear();
