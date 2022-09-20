@@ -4,7 +4,7 @@ This is a simple and fast little framework for finding shortest path from point 
 If you are building strategy game, you might want to give orders to your units where to go. Or maybe you want zoombies chase the player. 
 Well, this framework got you covered.
 ## Is it bloated?
-No, there are 3 versions, all of them are using `dotnet framework3.1` and only one uses additional dependencie - `MonoGame.Framework.DesktopGL`.
+No, there are 3 versions, all of them are using `dotnet framework3.1` and only one uses additional dependency - `MonoGame.Framework.DesktopGL`.
 ## How to use it?
 Currently there are 3 folders in the repository:
 * MadeClean (Just dotnet framework3.1, nothing else. Returns a path as a list of uint, where X and Y coordinates of solving nodes are packed in the row)
